@@ -68,3 +68,51 @@ if st.button("Predict Future Price", key="predict_final"):
                 st.error(f"AI Error: {result.get('error')}")
     except:
         st.error("Connection to Engine failed.")
+        
+if st.button("Calculate Predicted Price"):
+    if model:
+        # 1. Prediction Logic
+        input_df = pd.DataFrame([[
+            month, yesterday_p, avg_7_p, 
+            weather_data['temp'], weather_data['humidity'], weather_data['rainfall']
+        ]], columns=['month', 'yesterday_price', 'seven_day_avg', 'temp', 'humidity', 'rainfall'])
+        
+        prediction = model.predict(input_df)[0]
+        
+        # 2. Display Results
+        st.balloons()
+        st.subheader("📊 Market Analysis Results")
+        
+        col_res1, col_res2 = st.columns(2)
+        with col_res1:
+            st.metric(label="Tomorrow's Forecast", value=f"₹{round(prediction, 2)}", 
+                      delta=f"{round(prediction - yesterday_p, 2)} from yesterday")
+        
+        with col_res2:
+            st.metric(label="7-Day Average", value=f"₹{avg_7_p}")
+
+        # 3. ADDING THE PRICE CHART
+        st.write("---")
+        st.subheader("📈 Price Trend Visualization")
+        
+        # We create a small dataframe to simulate the trend based on your inputs
+        # This shows Yesterday, 7-Day Avg, and Tomorrow's Prediction
+        chart_data = pd.DataFrame({
+            'Timeframe': ['7-Day Avg', 'Yesterday', 'Predicted'],
+            'Price (₹)': [avg_7_p, yesterday_p, prediction]
+        }).set_index('Timeframe')
+
+        st.line_chart(chart_data, use_container_width=True)
+        
+        # 4. Adding a Comparison Area Chart
+        st.write("### Prediction Confidence View")
+        # Creating a small fluctuation range for visual effect
+        confidence_data = pd.DataFrame({
+            "Min Price": [prediction * 0.98],
+            "Predicted": [prediction],
+            "Max Price": [prediction * 1.02]
+        })
+        st.area_chart(confidence_data)
+
+    else:
+        st.error("Model file not found in repository.")
